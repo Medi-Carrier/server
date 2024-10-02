@@ -6,7 +6,7 @@ from django.http import Http404
 from .models import *
 from .serializers import *
 from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated  # 인증된 사용자만 접근 가능
+from rest_framework.permissions import IsAuthenticated
 from requests.exceptions import HTTPError
 from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
@@ -14,15 +14,13 @@ from googletrans import Translator
 from rest_framework import generics
 from rest_framework import viewsets
 import requests
-
-
 import math
 
 
 # 번역기 인스턴스 생성
 translator = Translator()
 
-# 검색뷰
+# 의료 시설 검색
 @csrf_exempt
 def search_hospitals(request):
     keyword = request.GET.get('keyword')
@@ -75,14 +73,12 @@ class TranslateScriptView(APIView):
         trip = Trip.objects.get(user=user)
         dest_language = self.get_language_from_country(trip.country)
 
-
-        # 기본 스크립트 저장
         user = request.user
         script = Script.objects.create(
             user=user,
             language=dest_language,
             original_script=original_script,
-            translated_script=''  # 초기 번역은 비워둡니다
+            translated_script=''
         )
 
         # 자동 번역
@@ -94,7 +90,7 @@ class TranslateScriptView(APIView):
         return Response(serializer.data)
 
     def get_language_from_country(self, country):
-        # 나라에 기반한 언어 매핑 로직 (여기서는 간단한 예시)
+        # 나라에 기반한 언어 매핑
         country_language_map = {
         '남아프리카 공화국': 'af',
         '알바니아': 'sq',
@@ -217,8 +213,6 @@ class TranslateMediInfoView(APIView):
     def get(self, request, *args, **kwargs):
         user = request.user
 
-
-        # 사용자의 MediCard를 필터링하고 country가 '한국'인 것을 찾습니다.
         try:
             medicard = MediCard.objects.get(user=user, country='한국')
             trip = Trip.objects.get(user=user)
@@ -227,7 +221,7 @@ class TranslateMediInfoView(APIView):
         except MediCard.DoesNotExist:
             return Response({"error": "No MediCard found for this user with country '한국'."}, status=status.HTTP_404_NOT_FOUND)
 
-        # MediCard를 통해 MediInfo와 BasicInfo를 가져옵니다.
+        # MediCard를 통해 MediInfo와 BasicInfo를 가져옴
         try:
             medi_info = MediInfo.objects.get(medicard=medicard)
             basic_info = BasicInfo.objects.get(medicard=medicard)
@@ -246,7 +240,6 @@ class TranslateMediInfoView(APIView):
         def translate_info(info, lang):
             translated_info = {}
             for field, value in info.items():
-                # Skip translation for specific values
                 if field.lower() == "bloodtype":
                     translated_info[field] = value
                 else:
@@ -257,7 +250,6 @@ class TranslateMediInfoView(APIView):
             translated_info = {}
             for key, value in info.items():
                 translated_key = translate_text(key, lang)
-                # Skip translation for specific keys
                 if key.lower() in ["english_name", "bloodtype"]:
                     translated_info[translated_key] = value
                 else:
@@ -265,10 +257,8 @@ class TranslateMediInfoView(APIView):
                     translated_info[translated_key] = translated_value
             return translated_info
 
-
-        # 기본 정보와 의료 정보 번역
         english_lang = 'en'
-        travel_lang = medicard2.language  # 사용자 여행 국가 언어
+        travel_lang = medicard2.language
 
 
         medi_info_data = {
@@ -338,10 +328,10 @@ class AssistView(views.APIView):
 
 
 class TripListCreateAPIView(APIView):
-    permission_classes = [IsAuthenticated]  # 사용자 인증 필요
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        trips = Trip.objects.filter(user=request.user)  # 로그인된 사용자의 여행만 가져온다
+        trips = Trip.objects.filter(user=request.user)
         serializer = TripSerializer(trips, many=True)
         return Response(serializer.data)
 
@@ -371,10 +361,8 @@ class TripListCreateAPIView(APIView):
         except Trip.DoesNotExist:
             return Response({'error': 'Trip not found or you do not have permission to access this trip.'}, status=status.HTTP_404_NOT_FOUND)
 
-        # 요청된 데이터를 로그에 출력하여 확인합니다.
         print("Request data:", request.data)
 
-        # 부분 업데이트 허용
         serializer = TripSerializer(trip, data=request.data, partial=True)
         if serializer.is_valid():
             try:
@@ -499,12 +487,11 @@ class AssistView(APIView):
                         documents.extend(['진단서',
                                         '진단사실 확인서류'])
 
-            # documents 리스트를 문자열로 변환하여 저장
+
             assist_instance.document = ', '.join(
-                documents)  # ', '로 각 문서를 구분하여 저장
+                documents) 
             assist_instance.save()
 
-            # assist_instance를 다시 직렬화하여 반환
             response_serializer = AssistSerializer(assist_instance)
             return Response(response_serializer.data, status=status.HTTP_201_CREATED)
 
@@ -518,7 +505,7 @@ class AssistView(APIView):
 
 
 def haversine(lat1, lon1, lat2, lon2):
-    R = 6371  # Earth radius in kilometers
+    R = 6371
 
     lat1, lon1, lat2, lon2 = float(lat1), float(lon1), float(lat2), float(lon2)
 
@@ -529,7 +516,7 @@ def haversine(lat1, lon1, lat2, lon2):
     c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
 
     distance_km = R * c
-    distance_m = distance_km * 1000  # Convert kilometers to meters
+    distance_m = distance_km * 1000
     return distance_m
 
 @csrf_exempt
@@ -537,7 +524,7 @@ def get_hospitals(request):
     lat = float(request.GET.get('lat'))
     lng = float(request.GET.get('lng'))
     api_key = settings.GOOGLE_MAPS_API_KEY
-    keyword = request.GET.get('keyword', '')  # 기본값은 빈 문자열
+    keyword = request.GET.get('keyword', '')
 
     # Google Places API 호출
     url = f"https://maps.googleapis.com/maps/api/place/nearbysearch/json?location={lat},{lng}&radius=1000&type=hospital&key={api_key}&keyword={keyword}"
@@ -553,7 +540,7 @@ def get_hospitals(request):
                 photo_reference = photos[0].get('photo_reference')
                 photo_url = f"https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference={photo_reference}&key={api_key}"
 
-            # 병원 정보 가공
+            # 병원 정보
             hospitals.append({
                 "name": result.get("name"),
                 "rating": result.get("rating"),
@@ -584,7 +571,7 @@ def get_pharmacies(request):
                 photo_reference = photos[0].get('photo_reference')
                 photo_url = f"https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference={photo_reference}&key={api_key}"
 
-            # 약국 정보 가공
+            # 약국 정보
             pharmacies.append({
                 "name": result.get("name"),
                 "rating": result.get("rating"),
@@ -603,13 +590,11 @@ class CreateMediInfoView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
-        # 필터링: country가 "한국"인 MediCard를 찾기
         try:
             medicard = MediCard.objects.get(user=request.user, country='한국')
         except MediCard.DoesNotExist:
             return Response({'error': 'No MediCard with country "한국" found for this user.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # 데이터에 Medicard PK 설정
         request.data['medicard'] = medicard.pk
 
         serializer = MediInfoSerializer(data=request.data, context={'request': request})
@@ -619,7 +604,6 @@ class CreateMediInfoView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def put(self, request, *args, **kwargs):
-        # 로그인된 사용자의 MediCard를 필터링합니다.
         try:
             medicard = MediCard.objects.get(user=request.user, country='한국')
             medi_info = MediInfo.objects.get(medicard=medicard)
@@ -638,13 +622,11 @@ class CreateBasicInfoView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
-        # 필터링: country가 "한국"인 MediCard를 찾기
         try:
             medicard = MediCard.objects.get(user=request.user, country='한국')
         except MediCard.DoesNotExist:
             return Response({'error': 'No MediCard with country "한국" found for this user.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # 데이터에 Medicard PK 설정
         request.data['medicard'] = medicard.pk
 
         serializer = BasicInfoSerializer(data=request.data, context={'request': request})
@@ -655,7 +637,6 @@ class CreateBasicInfoView(APIView):
 
 
     def put(self, request, *args, **kwargs):
-        # 로그인된 사용자의 MediCard를 필터링합니다.
         try:
             medicard = MediCard.objects.get(user=request.user, country='한국')
             basic_info = BasicInfo.objects.get(medicard=medicard)
@@ -664,7 +645,6 @@ class CreateBasicInfoView(APIView):
         except BasicInfo.DoesNotExist:
             return Response({'error': 'No BasicInfo found for this user.'}, status=status.HTTP_404_NOT_FOUND)
 
-        # 기존 BasicInfo 객체를 업데이트합니다.
         serializer = BasicInfoSerializer(basic_info, data=request.data, partial=True, context={'request': request})
         if serializer.is_valid():
             serializer.save()
