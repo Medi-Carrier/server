@@ -18,17 +18,17 @@ class UserSerializer(serializers.ModelSerializer):
         nickname = validated_data.get('nickname', '')
 
         user = User(username=username, nickname=nickname)
-        user.set_password(password)  # 비밀번호 설정
+        user.set_password(password)
         user.save()
 
         # 기본 메디카드 생성
-        countries = ['한국', '영국']  # 한국과 영국 카드 생성 예시
-        languages = ['ko', 'en']  # 언어
+        countries = ['한국', '영국']
+        languages = ['ko', 'en']
 
         for country, language in zip(countries, languages):
             MediCard.objects.get_or_create(
                 user=user,
-                country=country,  # 문자열로 직접 설정
+                country=country,
                 defaults={'language': language}
             )
 
@@ -56,7 +56,7 @@ class UserLoginSerializer(serializers.Serializer):
                     'id': user.id,
                     'username': user.username,
                     'access_token': access,
-                    'nickname': user.nickname  # nickname 추가
+                    'nickname': user.nickname
                 }
                 return data 
 
