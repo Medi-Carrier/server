@@ -4,7 +4,7 @@ from django.conf import settings
 from datetime import date
 
 
-class Trip(models.Model):   # 사용자당 하나만 생성되는 여행 모델
+class Trip(models.Model):
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     country = models.CharField(max_length=20)
@@ -17,7 +17,7 @@ class Trip(models.Model):   # 사용자당 하나만 생성되는 여행 모델
 
 
 
-class MediCard(models.Model):   # 사용자당 하나만 생성 & 여행의 국가를 외래키로 가져오고 언어를 정의하는 모델
+class MediCard(models.Model):
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     country = models.CharField(max_length=20)
@@ -122,9 +122,6 @@ class Assist(models.Model):
         default='',
     )
 
-    #recommended_hospitals = models.ManyToManyField(
-    #    'Hospital', related_name='recommended_by_assists', blank=True)
-
     SYMPTOM_TYPE = [
         ('콧물이 나요', '콧물이 나요'),
         ('열이 나요', '열이 나요'),
@@ -222,7 +219,6 @@ class Assist(models.Model):
     created_at = models.DateField(default=date.today)
 
     def __str__(self):
-        # user 모델의 nickname 속성을 포함하여 문자열 반환
         return f"Assist: {self.user.nickname}"
 
 
@@ -233,8 +229,8 @@ class Hospital(models.Model):
     hospital_tel = models.CharField(max_length=15)
     hospital_ratings = models.CharField(max_length=20)
     hospital_open = models.BooleanField()
-    hospital_latitude = models.FloatField(default=0)  # 위도
-    hospital_longitude = models.FloatField(default=0)  # 경도
+    hospital_latitude = models.FloatField(default=0)
+    hospital_longitude = models.FloatField(default=0)
 
 
     def __str__(self):
@@ -248,8 +244,8 @@ class Pharmacy(models.Model):
     pharmacy_tel = models.CharField(max_length=15)
     pharmacy_ratings = models.CharField(max_length=20)
     pharmacy_open = models.BooleanField()
-    pharmacy_latitude = models.FloatField(default=0)  # 위도
-    pharmacy_longitude = models.FloatField(default=0)  # 경도
+    pharmacy_latitude = models.FloatField(default=0)
+    pharmacy_longitude = models.FloatField(default=0)
 
     def __str__(self):
         return self.pharmacy_name
@@ -264,7 +260,3 @@ class Script(models.Model):
 
     def __str__(self):
         return f"Script {self.user.username}"
-
-
-
-
