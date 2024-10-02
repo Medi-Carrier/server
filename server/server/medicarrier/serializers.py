@@ -12,10 +12,7 @@ class TripSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
     def create(self, validated_data):
-        # Trip 객체를 생성
         trip = super().create(validated_data)
-        
-        # 여행 등록 후 MediCard 생성 또는 업데이트
         language = self.get_language_from_country(trip.country)
         
         # 이전 여행 국가 언어를 가진 MediCard 찾기
@@ -39,7 +36,7 @@ class TripSerializer(serializers.ModelSerializer):
         return trip
 
     def get_language_from_country(self, country):
-        # 나라에 기반한 언어 매핑 로직 (여기서는 간단한 예시)
+        # 나라에 기반한 언어 매핑
         country_language_map = {
         '남아프리카 공화국': 'af',
         '알바니아': 'sq',
@@ -153,8 +150,8 @@ class TripSerializer(serializers.ModelSerializer):
         return country_language_map.get(country, 'en')  # 기본값 'en'
 
 class MediCardSerializer(serializers.ModelSerializer):
-    user = serializers.ReadOnlyField(source='user.username')  # 읽기 전용 필드로 설정
-    country = serializers.ReadOnlyField(source= 'trip.country')  # PrimaryKeyRelatedField 사용
+    user = serializers.ReadOnlyField(source='user.username')
+    country = serializers.ReadOnlyField(source= 'trip.country')
 
     class Meta:
         model = MediCard
@@ -288,7 +285,7 @@ class AssistSerializer(serializers.ModelSerializer):
                     documents.extend(['진단서',
                                       '진단사실 확인서류'])
 
-        assist_instance.document = ', '.join(documents)  # ', '로 각 문서를 구분하여 저장
+        assist_instance.document = ', '.join(documents)
         assist_instance.save()
 
     
@@ -302,8 +299,3 @@ class PharmacySerializer(serializers.ModelSerializer):
     class Meta:
         model = Pharmacy
         fields = '__all__'
-
-
-
-
-
