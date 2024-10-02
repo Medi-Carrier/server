@@ -14,8 +14,8 @@ admin.site.register(Script)
 
 @admin.register(MediCard)
 class MediCardAdmin(admin.ModelAdmin):
-    list_display = ('user', 'country', 'language')  # 표시할 필드 설정
-    search_fields = ('user__username', 'country__name')  # 검색 필드 설정
+    list_display = ('user', 'country', 'language')
+    search_fields = ('user__username', 'country__name')
 
 
 @admin.register(MediInfo)
@@ -122,10 +122,8 @@ class AssistAdmin(admin.ModelAdmin):
                         '진단 사실 확인 서류'
                     ])
 
-        # 문서 목록을 문자열로 변환하여 필드에 설정
         obj.document = ', '.join(documents)
 
-        # 모델 저장
         super().save_model(request, obj, form, change)
 
 admin.site.register(Assist, AssistAdmin)
